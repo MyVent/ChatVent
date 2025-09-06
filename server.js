@@ -7,7 +7,9 @@ let waiting = [];
 const partners = new Map();
 
 wss.on('connection', (ws) => {
+
     ws.on('message', (msg) => {
+
         if(msg === "__FIND__") {
             // Alte Verbindung trennen, falls vorhanden
             if(partners.has(ws)) {
@@ -19,12 +21,12 @@ wss.on('connection', (ws) => {
                 partners.delete(ws);
             }
 
-            // Prüfen, ob ein wartender Client verfügbar ist
+            // Prüfen, ob ein Partner verfügbar ist
             let foundPartner = null;
             for(let i = 0; i < waiting.length; i++) {
                 if(waiting[i] !== ws) {
                     foundPartner = waiting[i];
-                    waiting.splice(i, 1);
+                    waiting.splice(i, 1); // Partner aus Warteliste entfernen
                     break;
                 }
             }
@@ -36,9 +38,10 @@ wss.on('connection', (ws) => {
                 ws.send("__CONNECTED__");
                 foundPartner.send("__CONNECTED__");
             } else {
-                // Keine Partner verfügbar → selbst warten
+                // Wenn kein Partner da, in Warteliste aufnehmen
                 if(!waiting.includes(ws)) waiting.push(ws);
             }
+
             return;
         }
 
@@ -52,6 +55,7 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
+        // Partner benachrichtigen
         if(partners.has(ws)) {
             const partner = partners.get(ws);
             if(partner.readyState === WebSocket.OPEN) {
@@ -61,6 +65,7 @@ wss.on('connection', (ws) => {
             partners.delete(ws);
         }
 
+        // Aus Warteliste entfernen
         waiting = waiting.filter(client => client !== ws);
     });
 });

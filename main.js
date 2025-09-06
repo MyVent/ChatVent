@@ -4,7 +4,7 @@ const messageInput = document.getElementById("message-input");
 const newStranger = document.getElementById("new-stranger");
 
 let ws = null;
-let connected = false; // True, wenn gerade ein Stranger verbunden ist
+let connected = false;
 
 // Nachricht hinzufügen
 function addMessage(msg, type = "stranger") {
@@ -71,11 +71,10 @@ chatForm.addEventListener("submit", (e) => {
 // Neuer Stranger
 newStranger.addEventListener("click", () => {
     if(ws && ws.readyState === WebSocket.OPEN) {
-        // Alte Verbindung auf Client-Seite trennen
         if(connected) {
             connected = false;
             addMessage("Verbindung zum aktuellen Stranger getrennt. Suche neuen Stranger...", "stranger");
         }
-        ws.send("__FIND__"); // Server sucht einen neuen Partner
+        ws.send("__FIND__"); // Server sucht neuen Partner
     }
 });
