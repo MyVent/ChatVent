@@ -15,7 +15,7 @@ function addMessage(msg,type="stranger"){
 }
 
 function initChat(){
-    ws = new WebSocket("wss://chatvent.onrender.com"); // Render URL anpassen
+    ws = new WebSocket("wss://chatvent.onrender.com"); // Render URL einfügen
 
     ws.onopen = ()=>{
         addMessage("Verbunden zum Server. Suche nach einem Stranger...", "stranger");
@@ -67,7 +67,7 @@ newStranger.addEventListener("click", ()=>{
     if(ws && ws.readyState===WebSocket.OPEN){
         if(connected){
             connected=false;
-            addMessage("Verbindung zum aktuellen Stranger getrennt. Suche neuen Stranger...","stranger");
+            addMessage("Verbindung zum aktuellen Stranger getrennt. Suche neuen Stranger...", "stranger");
         }
         ws.send("__FIND__");
     }
