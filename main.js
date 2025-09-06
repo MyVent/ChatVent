@@ -69,7 +69,15 @@ chatForm.addEventListener("submit", (e) => {
 // Neuer Stranger
 newStranger.addEventListener("click", () => {
     if(ws && ws.readyState === WebSocket.OPEN) {
+        // Alte Verbindung zum Partner trennen
+        if(ws.partner) {
+            ws.partner = null;
+        }
+
+        // Status im Chat anzeigen
+        addMessage("Trenne alte Verbindung und suche neuen Stranger...", "stranger");
+
+        // Partner neu suchen
         ws.send("__FIND__");
-        addMessage("Suche neuen Stranger...", "stranger");
     }
 });
