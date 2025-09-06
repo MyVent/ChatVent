@@ -17,7 +17,7 @@ function addMessage(msg, type = "stranger") {
 
 // Verbindung aufbauen und Stranger suchen
 function initChat() {
-    ws = new WebSocket("wss://chatvent.onrender.com"); // Render WebSocket URL einfügen
+    ws = new WebSocket("wss://DEIN_RENDER_SERVER_URL"); // Render WebSocket URL einfügen
 
     ws.onopen = () => {
         addMessage("Verbunden zum Server. Suche nach einem Stranger...", "stranger");
@@ -29,15 +29,19 @@ function initChat() {
 
         // Prüfen ob die Nachricht ein Blob ist
         if(event.data instanceof Blob) {
-            msg = await event.data.text(); // Blob in Text konvertieren
+            msg = await event.data.text(); 
         } else {
             msg = event.data;
         }
 
+        // Steuer-Nachrichten abfangen
         if(msg === "__CONNECTED__") {
             addMessage("Verbunden mit einem Stranger!", "stranger");
         } else if(msg === "__DISCONNECTED__") {
             addMessage("Stranger hat die Verbindung beendet.", "stranger");
+        } else if(msg === "__FIND__") {
+            // Ignorieren, wird nur intern verwendet
+            return;
         } else {
             addMessage(msg, "stranger"); // Nachricht vom Stranger
         }
