@@ -42,10 +42,6 @@ button:hover {
     background: #ff3f6f;
 }
 
-#chat-container.hidden {
-    display: none;
-}
-
 #chat-container {
     display: flex;
     flex-direction: column;
@@ -54,7 +50,6 @@ button:hover {
     border-radius: 15px;
     padding: 10px;
     overflow: hidden;
-    margin-top: 15px;
 }
 
 #messages {

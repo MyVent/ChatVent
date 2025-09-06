@@ -1,5 +1,3 @@
-const connectBtn = document.getElementById("connect-btn");
-const chatContainer = document.getElementById("chat-container");
 const messages = document.getElementById("messages");
 const chatForm = document.getElementById("chat-form");
 const messageInput = document.getElementById("message-input");
@@ -7,7 +5,7 @@ const newStranger = document.getElementById("new-stranger");
 
 let ws = null;
 
-// Funktion zum Hinzufügen von Nachrichten
+// Nachricht hinzufügen
 function addMessage(msg, fromMe = false) {
     const msgDiv = document.createElement("div");
     msgDiv.textContent = fromMe ? `Du: ${msg}` : msg;
@@ -15,13 +13,13 @@ function addMessage(msg, fromMe = false) {
     messages.scrollTop = messages.scrollHeight;
 }
 
-// WebSocket Verbindung aufbauen
-function connectToServer() {
-    ws = new WebSocket("wss://DEIN_RENDER_SERVER_URL"); // Render WebSocket URL einfügen
+// Verbindung zum Server aufbauen und automatisch Stranger suchen
+function initChat() {
+    ws = new WebSocket("wws://chatvent.onrender.com"); // Hier Render URL einfügen
 
     ws.onopen = () => {
         addMessage("Verbunden zum Server. Suche nach einem Stranger...");
-        ws.send("__FIND__"); // Server nach Partner fragen
+        ws.send("__FIND__");
     };
 
     ws.onmessage = (event) => {
@@ -29,8 +27,6 @@ function connectToServer() {
 
         if(msg === "__CONNECTED__") {
             addMessage("Verbunden mit einem Stranger!");
-            connectBtn.style.display = "none";
-            chatContainer.classList.remove("hidden");
         } else if(msg === "__DISCONNECTED__") {
             addMessage("Stranger hat die Verbindung beendet.");
         } else {
@@ -40,17 +36,13 @@ function connectToServer() {
 
     ws.onclose = () => {
         addMessage("Verbindung getrennt.");
-        connectBtn.style.display = "inline-block";
-        chatContainer.classList.add("hidden");
     };
 }
 
-// Connect Button Event
-connectBtn.addEventListener("click", () => {
-    connectToServer();
-});
+// Chat initialisieren
+initChat();
 
-// Nachrichten senden
+// Nachricht senden
 chatForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const msg = messageInput.value.trim();
