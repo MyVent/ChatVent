@@ -4,37 +4,27 @@ const PORT = process.env.PORT || 3000;
 const wss = new WebSocket.Server({ port: PORT });
 
 let waitingClient = null; // Ein Client, der auf Partner wartet
-const partners = new Map(); // Map für aktive Verbindungen
+const partners = new Map();
 
 wss.on('connection', (ws) => {
 
+    // Prüfen, ob ein Partner verfügbar ist
+    if (waitingClient && waitingClient !== ws) {
+        partners.set(ws, waitingClient);
+        partners.set(waitingClient, ws);
+
+        ws.send("__CONNECTED__");
+        waitingClient.send("__CONNECTED__");
+
+        waitingClient = null;
+    } else {
+        waitingClient = ws;
+        ws.send("__WAITING__"); // Optional: Statusmeldung „Warte auf Stranger“
+    }
+
     ws.on('message', (msg) => {
 
-        if (msg === "__FIND__") {
-            // Alte Verbindung trennen
-            if (partners.has(ws)) {
-                const oldPartner = partners.get(ws);
-                if (oldPartner.readyState === WebSocket.OPEN) oldPartner.send("__DISCONNECTED__");
-                partners.delete(oldPartner);
-                partners.delete(ws);
-            }
-
-            // Partner finden
-            if (waitingClient && waitingClient !== ws) {
-                partners.set(ws, waitingClient);
-                partners.set(waitingClient, ws);
-
-                ws.send("__CONNECTED__");
-                waitingClient.send("__CONNECTED__");
-
-                waitingClient = null; // Warteliste leeren
-            } else {
-                waitingClient = ws; // Selbst warten
-            }
-            return;
-        }
-
-        // Normale Nachricht an Partner weiterleiten
+        // Nachricht an Partner weiterleiten
         if (partners.has(ws)) {
             const partner = partners.get(ws);
             if (partner.readyState === WebSocket.OPEN) {
