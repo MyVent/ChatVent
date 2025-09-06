@@ -1,36 +1,75 @@
 const WebSocket = require('ws');
 const PORT = process.env.PORT || 3000;
+
 const wss = new WebSocket.Server({ port: PORT });
 
-let waiting = null;
+// Liste aller wartenden Clients
+let waiting = [];
+// Map für aktive Verbindungen: client => partner
+const partners = new Map();
 
 wss.on('connection', (ws) => {
-    ws.partner = null;
-
     ws.on('message', (msg) => {
+
+        // Steuerbefehle
         if(msg === "__FIND__") {
-            if(waiting && waiting !== ws) {
-                // Partner gefunden
-                ws.partner = waiting;
-                waiting.partner = ws;
+            // Alte Verbindung trennen
+            if(partners.has(ws)) {
+                const oldPartner = partners.get(ws);
+                if(oldPartner.readyState === WebSocket.OPEN) {
+                    oldPartner.send("__DISCONNECTED__");
+                }
+                partners.delete(oldPartner);
+                partners.delete(ws);
+            }
+
+            // Prüfen, ob ein wartender Client da ist
+            let foundPartner = null;
+            for(let i = 0; i < waiting.length; i++) {
+                if(waiting[i] !== ws) {
+                    foundPartner = waiting[i];
+                    waiting.splice(i, 1);
+                    break;
+                }
+            }
+
+            if(foundPartner) {
+                // Verbindung herstellen
+                partners.set(ws, foundPartner);
+                partners.set(foundPartner, ws);
 
                 ws.send("__CONNECTED__");
-                waiting.send("__CONNECTED__");
-
-                waiting = null;
+                foundPartner.send("__CONNECTED__");
             } else {
-                waiting = ws;
+                // Wenn keiner verfügbar, in die Warteliste
+                if(!waiting.includes(ws)) waiting.push(ws);
             }
-        } else if(ws.partner) {
-            ws.partner.send(msg); // Nachricht an Partner weiterleiten
+            return;
+        }
+
+        // Normale Nachricht weiterleiten
+        if(partners.has(ws)) {
+            const partner = partners.get(ws);
+            if(partner.readyState === WebSocket.OPEN) {
+                partner.send(msg);
+            }
         }
     });
 
     ws.on('close', () => {
-        if(ws.partner) {
-            ws.partner.send("__DISCONNECTED__");
-            ws.partner.partner = null;
+        // Partner benachrichtigen
+        if(partners.has(ws)) {
+            const partner = partners.get(ws);
+            if(partner.readyState === WebSocket.OPEN) {
+                partner.send("__DISCONNECTED__");
+            }
+            partners.delete(partner);
+            partners.delete(ws);
         }
-        if(waiting === ws) waiting = null;
+
+        // Aus Warteliste entfernen
+        waiting = waiting.filter(client => client !== ws);
     });
 });
+
+console.log(`WebSocket Server läuft auf Port ${PORT}`);
