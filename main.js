@@ -24,8 +24,15 @@ function initChat() {
         ws.send("__FIND__"); // Partner suchen
     };
 
-    ws.onmessage = (event) => {
-        const msg = event.data;
+    ws.onmessage = async (event) => {
+        let msg;
+
+        // Prüfen ob die Nachricht ein Blob ist
+        if(event.data instanceof Blob) {
+            msg = await event.data.text(); // Blob in Text konvertieren
+        } else {
+            msg = event.data;
+        }
 
         if(msg === "__CONNECTED__") {
             addMessage("Verbunden mit einem Stranger!", "stranger");
