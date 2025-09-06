@@ -17,7 +17,7 @@ function addMessage(msg, type = "stranger") {
 
 // Verbindung aufbauen und Stranger suchen
 function initChat() {
-    ws = new WebSocket("wss://DEIN_RENDER_SERVER_URL"); // Render WebSocket URL einfügen
+    ws = new WebSocket("wss://chatvent.onrender.com"); // Render WebSocket URL einfügen
 
     ws.onopen = () => {
         addMessage("Verbunden zum Server. Suche nach einem Stranger...", "stranger");
