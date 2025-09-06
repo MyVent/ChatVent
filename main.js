@@ -6,49 +6,51 @@ const newStranger = document.getElementById("new-stranger");
 let ws = null;
 
 // Nachricht hinzufügen
-function addMessage(msg, fromMe = false) {
+function addMessage(msg, type = "stranger") {
     const msgDiv = document.createElement("div");
-    msgDiv.textContent = fromMe ? `Du: ${msg}` : msg;
+    msgDiv.textContent = msg;
+    msgDiv.classList.add("message");
+    msgDiv.classList.add(type); // "self" oder "stranger"
     messages.appendChild(msgDiv);
     messages.scrollTop = messages.scrollHeight;
 }
 
-// Verbindung zum Server aufbauen und automatisch Stranger suchen
+// Verbindung aufbauen und Stranger suchen
 function initChat() {
-    ws = new WebSocket("wws://chatvent.onrender.com"); // Hier Render URL einfügen
+    ws = new WebSocket("wss://chatvent.onrender.com"); // Render WebSocket URL einfügen
 
     ws.onopen = () => {
-        addMessage("Verbunden zum Server. Suche nach einem Stranger...");
-        ws.send("__FIND__");
+        addMessage("Verbunden zum Server. Suche nach einem Stranger...", "stranger");
+        ws.send("__FIND__"); // Partner suchen
     };
 
     ws.onmessage = (event) => {
         const msg = event.data;
 
         if(msg === "__CONNECTED__") {
-            addMessage("Verbunden mit einem Stranger!");
+            addMessage("Verbunden mit einem Stranger!", "stranger");
         } else if(msg === "__DISCONNECTED__") {
-            addMessage("Stranger hat die Verbindung beendet.");
+            addMessage("Stranger hat die Verbindung beendet.", "stranger");
         } else {
-            addMessage(msg);
+            addMessage(msg, "stranger"); // Nachricht vom Stranger
         }
     };
 
     ws.onclose = () => {
-        addMessage("Verbindung getrennt.");
+        addMessage("Verbindung getrennt.", "stranger");
     };
 }
 
-// Chat initialisieren
+// Chat starten
 initChat();
 
-// Nachricht senden
+// Eigene Nachrichten senden
 chatForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const msg = messageInput.value.trim();
     if(msg && ws && ws.readyState === WebSocket.OPEN) {
         ws.send(msg);
-        addMessage(msg, true);
+        addMessage(msg, "self"); // Eigene Nachricht
         messageInput.value = "";
     }
 });
@@ -57,6 +59,6 @@ chatForm.addEventListener("submit", (e) => {
 newStranger.addEventListener("click", () => {
     if(ws && ws.readyState === WebSocket.OPEN) {
         ws.send("__FIND__");
-        addMessage("Suche neuen Stranger...");
+        addMessage("Suche neuen Stranger...", "stranger");
     }
 });

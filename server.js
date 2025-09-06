@@ -22,7 +22,7 @@ wss.on('connection', (ws) => {
                 waiting = ws;
             }
         } else if(ws.partner) {
-            ws.partner.send(msg); // Nachricht weiterleiten
+            ws.partner.send(msg); // Nachricht an Partner weiterleiten
         }
     });
 
