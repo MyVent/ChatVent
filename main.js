@@ -6,7 +6,7 @@ const newStranger = document.getElementById("new-stranger");
 let ws = null;
 let connected = false;
 
-function addMessage(msg, type="stranger"){
+function addMessage(msg,type="stranger"){
     const div = document.createElement("div");
     div.textContent = msg;
     div.classList.add("message", type);
@@ -14,15 +14,15 @@ function addMessage(msg, type="stranger"){
     messages.scrollTop = messages.scrollHeight;
 }
 
-function connectServer(){
-    ws = new WebSocket("wss://chatvent.onrender.com"); // URL anpassen
+function initChat(){
+    ws = new WebSocket("wss://chatvent.onrender.com"); // Render URL anpassen
 
-    ws.onopen = () => {
+    ws.onopen = ()=>{
         addMessage("Verbunden zum Server. Suche nach einem Stranger...", "stranger");
         ws.send("__FIND__");
     }
 
-    ws.onmessage = async (event) => {
+    ws.onmessage = async (event)=>{
         let msg;
         if(event.data instanceof Blob){
             msg = await event.data.text();
@@ -39,25 +39,25 @@ function connectServer(){
         } else if(msg === "__FIND__"){
             return;
         } else {
-            if(connected) addMessage(msg, "stranger");
+            if(connected) addMessage(msg,"stranger");
         }
     }
 
-    ws.onclose = () => {
+    ws.onclose = ()=>{
         connected = false;
         addMessage("Verbindung getrennt.", "stranger");
     }
 }
 
-connectServer();
+initChat();
 
-// eigene Nachricht senden
+// Eigene Nachrichten senden
 chatForm.addEventListener("submit", e=>{
     e.preventDefault();
     const msg = messageInput.value.trim();
     if(msg && ws && ws.readyState===WebSocket.OPEN && connected){
         ws.send(msg);
-        addMessage(msg, "self");
+        addMessage(msg,"self");
         messageInput.value="";
     }
 })
@@ -67,7 +67,7 @@ newStranger.addEventListener("click", ()=>{
     if(ws && ws.readyState===WebSocket.OPEN){
         if(connected){
             connected=false;
-            addMessage("Verbindung zum aktuellen Stranger getrennt. Suche neuen Stranger...", "stranger");
+            addMessage("Verbindung zum aktuellen Stranger getrennt. Suche neuen Stranger...","stranger");
         }
         ws.send("__FIND__");
     }

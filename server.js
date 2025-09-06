@@ -3,14 +3,15 @@ const PORT = process.env.PORT || 3000;
 
 const wss = new WebSocket.Server({ port: PORT });
 
-let waiting = null; // nur ein Client wartet
-const partners = new Map();
+let waiting = []; // Liste aller wartenden Clients
+const partners = new Map(); // Map: ws -> Partner
 
 wss.on('connection', (ws) => {
 
     ws.on('message', (msg) => {
+
         if(msg === "__FIND__") {
-            // alte Verbindung trennen
+            // Alte Verbindung trennen
             if(partners.has(ws)) {
                 const oldPartner = partners.get(ws);
                 if(oldPartner.readyState === WebSocket.OPEN) oldPartner.send("__DISCONNECTED__");
@@ -18,39 +19,49 @@ wss.on('connection', (ws) => {
                 partners.delete(ws);
             }
 
-            // Partner finden
-            if(waiting && waiting !== ws) {
-                const partner = waiting;
-                waiting = null;
+            // Prüfen, ob ein wartender Client verfügbar ist
+            let partner = null;
+            for(let i = 0; i < waiting.length; i++){
+                if(waiting[i] !== ws){
+                    partner = waiting[i];
+                    waiting.splice(i,1);
+                    break;
+                }
+            }
 
+            if(partner){
+                // Partner verbinden
                 partners.set(ws, partner);
                 partners.set(partner, ws);
 
                 ws.send("__CONNECTED__");
                 partner.send("__CONNECTED__");
             } else {
-                waiting = ws; // selbst warten
+                // Wenn kein Partner verfügbar, in Warteliste
+                if(!waiting.includes(ws)) waiting.push(ws);
             }
             return;
         }
 
-        // Nachricht an Partner weiterleiten
-        if(partners.has(ws)) {
+        // Normale Nachrichten an Partner weiterleiten
+        if(partners.has(ws)){
             const partner = partners.get(ws);
-            if(partner.readyState === WebSocket.OPEN) {
+            if(partner.readyState === WebSocket.OPEN){
                 partner.send(msg);
             }
         }
     });
 
     ws.on('close', () => {
-        if(partners.has(ws)) {
+        // Partner benachrichtigen
+        if(partners.has(ws)){
             const partner = partners.get(ws);
             if(partner.readyState === WebSocket.OPEN) partner.send("__DISCONNECTED__");
             partners.delete(partner);
             partners.delete(ws);
         }
-        if(waiting === ws) waiting = null;
+        // Aus Warteliste entfernen
+        waiting = waiting.filter(c => c !== ws);
     });
 });
 
