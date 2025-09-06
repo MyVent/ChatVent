@@ -3,20 +3,59 @@ const PORT = process.env.PORT || 3000;
 
 const wss = new WebSocket.Server({ port: PORT });
 
+let waitingClient = null;
+const partners = new Map();
+
 wss.on('connection', (ws) => {
 
-    // Neue Verbindung, keine Warteliste
-    ws.send("__CONNECTED__"); // Optional: direkt verbunden
-
     ws.on('message', (msg) => {
-        // Alle Nachrichten an denselben Client zurücksenden (oder an Bot simulieren)
-        if(ws.readyState === WebSocket.OPEN){
-            ws.send(msg); // Echo oder Bot antwortet hier
+
+        if(msg === "__FIND__") {
+
+            // Alte Verbindung trennen
+            if(partners.has(ws)){
+                const oldPartner = partners.get(ws);
+                if(oldPartner.readyState === WebSocket.OPEN) oldPartner.send("__DISCONNECTED__");
+                partners.delete(oldPartner);
+                partners.delete(ws);
+            }
+
+            // Partner finden
+            if(waitingClient && waitingClient !== ws){
+                partners.set(ws, waitingClient);
+                partners.set(waitingClient, ws);
+
+                ws.send("__CONNECTED__");
+                waitingClient.send("__CONNECTED__");
+
+                waitingClient = null; // Warteliste leeren
+            } else {
+                waitingClient = ws;
+                ws.send("__WAITING__"); // Statusmeldung „warte auf Stranger“
+            }
+
+            return;
+        }
+
+        // Normale Nachricht an Partner weiterleiten
+        if(partners.has(ws)){
+            const partner = partners.get(ws);
+            if(partner.readyState === WebSocket.OPEN){
+                partner.send(msg);
+            }
         }
     });
 
     ws.on('close', () => {
-        // Verbindung geschlossen, keine Warteliste nötig
+        // Partner benachrichtigen
+        if(partners.has(ws)){
+            const partner = partners.get(ws);
+            if(partner.readyState === WebSocket.OPEN) partner.send("__DISCONNECTED__");
+            partners.delete(partners.get(ws));
+            partners.delete(ws);
+        }
+
+        if(waitingClient === ws) waitingClient = null;
     });
 });
 

@@ -14,28 +14,47 @@ function addMessage(msg,type="stranger"){
     messages.scrollTop = messages.scrollHeight;
 }
 
-function initChat(){
-    ws = new WebSocket("wss://chatvent.onrender.com"); // Render URL einfügen
+function connectToStranger(){
+    if(!ws || ws.readyState !== WebSocket.OPEN){
+        ws = new WebSocket("wss://chatvent.onrender.com"); // Render URL einfügen
 
-    ws.onopen = ()=>{
-        connected = true;
-        addMessage("Verbunden mit einem Stranger!", "stranger");
-    }
-
-    ws.onmessage = async (event)=>{
-        let msg;
-        if(event.data instanceof Blob){
-            msg = await event.data.text();
-        } else {
-            msg = event.data;
+        ws.onopen = ()=>{
+            ws.send("__FIND__");
+            addMessage("Suche nach einem Stranger...", "stranger");
         }
 
-        addMessage(msg,"stranger");
-    }
+        ws.onmessage = async (event)=>{
+            let msg;
+            if(event.data instanceof Blob){
+                msg = await event.data.text();
+            } else {
+                msg = event.data;
+            }
 
-    ws.onclose = ()=>{
-        connected = false;
-        addMessage("Verbindung getrennt.", "stranger");
+            if(msg === "__CONNECTED__"){
+                connected = true;
+                addMessage("Verbunden mit einem Stranger!", "stranger");
+            } else if(msg === "__WAITING__"){
+                connected = false;
+                addMessage("Warte auf einen Stranger...", "stranger");
+            } else if(msg === "__DISCONNECTED__"){
+                connected = false;
+                addMessage("Stranger hat die Verbindung beendet.", "stranger");
+            } else {
+                if(connected) addMessage(msg,"stranger");
+            }
+        }
+
+        ws.onclose = ()=>{
+            connected = false;
+            addMessage("Verbindung getrennt.", "stranger");
+        }
+    } else {
+        if(connected){
+            connected = false;
+            addMessage("Verbindung zum alten Stranger getrennt. Suche neuen Stranger...", "stranger");
+        }
+        ws.send("__FIND__");
     }
 }
 
@@ -43,7 +62,7 @@ function initChat(){
 chatForm.addEventListener("submit", e=>{
     e.preventDefault();
     const msg = messageInput.value.trim();
-    if(msg && ws && ws.readyState===WebSocket.OPEN){
+    if(msg && ws && ws.readyState===WebSocket.OPEN && connected){
         ws.send(msg);
         addMessage(msg,"self");
         messageInput.value="";
@@ -52,11 +71,5 @@ chatForm.addEventListener("submit", e=>{
 
 // Neuer Stranger Button
 newStranger.addEventListener("click", ()=>{
-    if(ws && ws.readyState===WebSocket.OPEN){
-        ws.close(); // alte Verbindung trennen
-        addMessage("Suche neuen Stranger...", "stranger");
-        setTimeout(() => initChat(), 500); // neue Verbindung starten
-    } else {
-        initChat(); // keine alte Verbindung
-    }
+    connectToStranger();
 })
