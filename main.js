@@ -1,4 +1,5 @@
-const ws = new WebSocket('ws://localhost:3000');
+// vorher: const ws = new WebSocket('ws://localhost:3000');
+const ws = new WebSocket('wss://DEIN_RENDER_SERVER_URL');
 const messages = document.getElementById('messages');
 const chatForm = document.getElementById('chat-form');
 const messageInput = document.getElementById('message-input');
