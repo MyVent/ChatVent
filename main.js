@@ -1,26 +1,55 @@
-// vorher: const ws = new WebSocket('ws://localhost:3000');
-const ws = new WebSocket('wss://chatvent.onrender.com');
+let ws = null;
 const messages = document.getElementById('messages');
 const chatForm = document.getElementById('chat-form');
 const messageInput = document.getElementById('message-input');
 const newStranger = document.getElementById('new-stranger');
+const connectBtn = document.getElementById('connect-btn');
+const chatContainer = document.getElementById('chat-container');
 
-ws.onmessage = (event) => {
-    const msgDiv = document.createElement('div');
-    msgDiv.textContent = event.data;
-    messages.appendChild(msgDiv);
-    messages.scrollTop = messages.scrollHeight;
-};
+// Connect-Button Funktion
+connectBtn.addEventListener('click', () => {
+    ws = new WebSocket('wss://DEIN_RENDER_SERVER_URL'); // hier Render WebSocket URL einfügen
 
+    ws.onopen = () => {
+        connectBtn.style.display = 'none';
+        chatContainer.classList.remove('hidden');
+        addMessage("Verbunden! Warte auf einen Stranger...");
+    };
+
+    ws.onmessage = (event) => {
+        addMessage(event.data);
+    };
+
+    ws.onclose = () => {
+        addMessage("Verbindung getrennt.");
+        connectBtn.style.display = 'inline-block';
+        chatContainer.classList.add('hidden');
+    };
+});
+
+// Nachrichten senden
 chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const msg = messageInput.value.trim();
-    if(msg){
+    if(ws && ws.readyState === WebSocket.OPEN && msg){
         ws.send(msg);
+        addMessage("Du: " + msg);
         messageInput.value = '';
     }
 });
 
+// Neuer Stranger
 newStranger.addEventListener('click', () => {
-    ws.send('__NEW__'); // Signal für neuen Partner
+    if(ws && ws.readyState === WebSocket.OPEN){
+        ws.send('__NEW__');
+        addMessage("Suche neuen Stranger...");
+    }
 });
+
+// Nachricht im Chat anzeigen
+function addMessage(msg){
+    const msgDiv = document.createElement('div');
+    msgDiv.textContent = msg;
+    messages.appendChild(msgDiv);
+    messages.scrollTop = messages.scrollHeight;
+}

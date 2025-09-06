@@ -9,14 +9,16 @@
 <body>
     <div class="container">
         <h1>ChatVent</h1>
-        <div id="chat-container">
+        <button id="connect-btn">Connect</button>
+
+        <div id="chat-container" class="hidden">
             <div id="messages"></div>
             <form id="chat-form">
                 <input type="text" id="message-input" placeholder="Schreib etwas..." autocomplete="off"/>
                 <button type="submit">Senden</button>
             </form>
+            <button id="new-stranger">Neuer Stranger</button>
         </div>
-        <button id="new-stranger">Neuer Stranger</button>
     </div>
     <script src="main.js"></script>
 </body>
