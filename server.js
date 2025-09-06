@@ -8,8 +8,8 @@ wss.on('connection', (ws) => {
     ws.partner = null;
 
     ws.on('message', (msg) => {
-        if(msg === "__FIND__"){
-            if(waiting && waiting !== ws){
+        if(msg === "__FIND__") {
+            if(waiting && waiting !== ws) {
                 // Partner gefunden
                 ws.partner = waiting;
                 waiting.partner = ws;
@@ -21,14 +21,14 @@ wss.on('connection', (ws) => {
             } else {
                 waiting = ws;
             }
-        } else if(ws.partner){
+        } else if(ws.partner) {
             ws.partner.send(msg); // Nachricht weiterleiten
         }
     });
 
     ws.on('close', () => {
-        if(ws.partner){
-            ws.partner.send("Stranger hat die Verbindung beendet.");
+        if(ws.partner) {
+            ws.partner.send("__DISCONNECTED__");
             ws.partner.partner = null;
         }
         if(waiting === ws) waiting = null;
