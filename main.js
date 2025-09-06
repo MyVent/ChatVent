@@ -18,7 +18,7 @@ function initChat(){
     ws = new WebSocket("wss://chatvent.onrender.com"); // Render URL einfügen
 
     ws.onopen = ()=>{
-        addMessage("Verbunden zum Server...", "stranger");
+        addMessage("Verbunden mit Stranger!", "stranger");
     }
 
     ws.onmessage = async (event)=>{
@@ -32,14 +32,8 @@ function initChat(){
         if(msg === "__CONNECTED__"){
             connected = true;
             addMessage("Verbunden mit einem Stranger!", "stranger");
-        } else if(msg === "__WAITING__"){
-            connected = false;
-            addMessage("Warte auf einen Stranger...", "stranger");
-        } else if(msg === "__DISCONNECTED__"){
-            connected = false;
-            addMessage("Stranger hat die Verbindung beendet.", "stranger");
         } else {
-            if(connected) addMessage(msg,"stranger");
+            addMessage(msg,"stranger");
         }
     }
 
@@ -55,20 +49,18 @@ initChat();
 chatForm.addEventListener("submit", e=>{
     e.preventDefault();
     const msg = messageInput.value.trim();
-    if(msg && ws && ws.readyState===WebSocket.OPEN && connected){
+    if(msg && ws && ws.readyState===WebSocket.OPEN){
         ws.send(msg);
         addMessage(msg,"self");
         messageInput.value="";
     }
 })
 
-// Neuer Stranger
+// Neuer Stranger → Verbindung trennen und neue Direktverbindung
 newStranger.addEventListener("click", ()=>{
     if(ws && ws.readyState===WebSocket.OPEN){
-        if(connected){
-            connected=false;
-            addMessage("Verbindung zum aktuellen Stranger getrennt. Suche neuen Stranger...","stranger");
-        }
-        ws.send("__FIND__"); // Optional: für neue Verbindung
+        ws.close(); // Alte Verbindung trennen
+        addMessage("Suche neuen Stranger...", "stranger");
+        setTimeout(initChat, 500); // Neue Verbindung aufbauen
     }
 })

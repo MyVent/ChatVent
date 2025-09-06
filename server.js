@@ -3,47 +3,30 @@ const PORT = process.env.PORT || 3000;
 
 const wss = new WebSocket.Server({ port: PORT });
 
-let waitingClient = null; // Ein Client, der auf Partner wartet
-const partners = new Map();
-
 wss.on('connection', (ws) => {
 
-    // Prüfen, ob ein Partner verfügbar ist
-    if (waitingClient && waitingClient !== ws) {
-        partners.set(ws, waitingClient);
-        partners.set(waitingClient, ws);
-
-        ws.send("__CONNECTED__");
-        waitingClient.send("__CONNECTED__");
-
-        waitingClient = null;
-    } else {
-        waitingClient = ws;
-        ws.send("__WAITING__"); // Optional: Statusmeldung „Warte auf Stranger“
-    }
+    // Direkt verbunden
+    ws.send("__CONNECTED__");
 
     ws.on('message', (msg) => {
-
-        // Nachricht an Partner weiterleiten
-        if (partners.has(ws)) {
-            const partner = partners.get(ws);
-            if (partner.readyState === WebSocket.OPEN) {
-                partner.send(msg);
+        // Optional: Fake-Stranger antwortet zufällig
+        setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                const responses = [
+                    "Hey!",
+                    "Interessant...",
+                    "Erzähl mir mehr!",
+                    "Haha, echt?",
+                    "Cool!"
+                ];
+                const reply = responses[Math.floor(Math.random() * responses.length)];
+                ws.send(reply);
             }
-        }
+        }, Math.random() * 1500 + 500); // zufällige Antwort zwischen 0.5–2s
     });
 
     ws.on('close', () => {
-        // Partner benachrichtigen
-        if (partners.has(ws)) {
-            const partner = partners.get(ws);
-            if (partner.readyState === WebSocket.OPEN) partner.send("__DISCONNECTED__");
-            partners.delete(partner);
-            partners.delete(ws);
-        }
-
-        // Aus Warteliste entfernen
-        if (waitingClient === ws) waitingClient = null;
+        // Verbindung geschlossen
     });
 });
 
