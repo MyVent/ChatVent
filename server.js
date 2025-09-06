@@ -3,30 +3,61 @@ const PORT = process.env.PORT || 3000;
 
 const wss = new WebSocket.Server({ port: PORT });
 
+// Wir verwenden hier nur ein Omegle-Prinzip: ein Client wartet auf einen Partner
+let waitingClient = null;
+const partners = new Map();
+
 wss.on('connection', (ws) => {
 
-    // Direkt verbunden
-    ws.send("__CONNECTED__");
-
     ws.on('message', (msg) => {
-        // Optional: Fake-Stranger antwortet zufällig
-        setTimeout(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-                const responses = [
-                    "Hey!",
-                    "Interessant...",
-                    "Erzähl mir mehr!",
-                    "Haha, echt?",
-                    "Cool!"
-                ];
-                const reply = responses[Math.floor(Math.random() * responses.length)];
-                ws.send(reply);
+
+        if(msg === "__FIND__") {
+
+            // Alte Verbindung trennen, falls vorhanden
+            if(partners.has(ws)){
+                const oldPartner = partners.get(ws);
+                if(oldPartner.readyState === WebSocket.OPEN) oldPartner.send("__DISCONNECTED__");
+                partners.delete(oldPartner);
+                partners.delete(ws);
             }
-        }, Math.random() * 1500 + 500); // zufällige Antwort zwischen 0.5–2s
+
+            // Partner finden
+            if(waitingClient && waitingClient !== ws){
+                partners.set(ws, waitingClient);
+                partners.set(waitingClient, ws);
+
+                ws.send("__CONNECTED__");
+                waitingClient.send("__CONNECTED__");
+
+                waitingClient = null; // Warteliste leeren
+            } else {
+                waitingClient = ws;
+                ws.send("__WAITING__"); // Status: Warte auf Stranger
+            }
+
+            return;
+        }
+
+        // Normale Nachricht an Partner weiterleiten
+        if(partners.has(ws)){
+            const partner = partners.get(ws);
+            if(partner.readyState === WebSocket.OPEN){
+                partner.send(msg);
+            }
+        }
     });
 
     ws.on('close', () => {
-        // Verbindung geschlossen
+        // Partner benachrichtigen
+        if(partners.has(ws)){
+            const partner = partners.get(ws);
+            if(partner.readyState === WebSocket.OPEN) partner.send("__DISCONNECTED__");
+            partners.delete(partner);
+            partners.delete(ws);
+        }
+
+        // Aus Warteliste entfernen
+        if(waitingClient === ws) waitingClient = null;
     });
 });
 
