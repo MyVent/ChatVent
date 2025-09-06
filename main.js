@@ -1,5 +1,4 @@
 let ws = null;
-let connectedToStranger = false;
 
 const messages = document.getElementById('messages');
 const chatForm = document.getElementById('chat-form');
@@ -8,38 +7,39 @@ const newStranger = document.getElementById('new-stranger');
 const connectBtn = document.getElementById('connect-btn');
 const chatContainer = document.getElementById('chat-container');
 
-// Connect-Button Funktion
 connectBtn.addEventListener('click', () => {
     ws = new WebSocket('wss://DEIN_RENDER_SERVER_URL'); // Render WebSocket URL einfügen
 
     ws.onopen = () => {
-        addMessage("Verbindung hergestellt. Suche nach einem Stranger...");
+        addMessage("Verbunden zum Server. Suche nach einem Stranger...");
+        ws.send("__FIND__"); // Signal für Server: Partner suchen
     };
 
     ws.onmessage = (event) => {
         const msg = event.data;
-        // Wenn Nachricht "Verbunden mit einem Stranger!" -> Chat freigeben
-        if(msg === "Verbunden mit einem Stranger!"){
-            connectedToStranger = true;
+
+        // Wenn Nachricht Server: Stranger verbunden
+        if(msg === "__CONNECTED__"){
+            addMessage("Verbunden mit einem Stranger!");
             connectBtn.style.display = 'none';
             chatContainer.classList.remove('hidden');
+        } else {
+            addMessage(msg);
         }
-        addMessage(msg);
     };
 
     ws.onclose = () => {
         addMessage("Verbindung getrennt.");
         connectBtn.style.display = 'inline-block';
         chatContainer.classList.add('hidden');
-        connectedToStranger = false;
     };
 });
 
-// Nachrichten senden nur wenn mit Stranger verbunden
+// Nachrichten senden
 chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const msg = messageInput.value.trim();
-    if(ws && ws.readyState === WebSocket.OPEN && msg && connectedToStranger){
+    if(ws && ws.readyState === WebSocket.OPEN && msg){
         ws.send(msg);
         addMessage("Du: " + msg);
         messageInput.value = '';
@@ -49,8 +49,7 @@ chatForm.addEventListener('submit', (e) => {
 // Neuer Stranger
 newStranger.addEventListener('click', () => {
     if(ws && ws.readyState === WebSocket.OPEN){
-        ws.send('__NEW__');
-        connectedToStranger = false;
+        ws.send("__FIND__");
         addMessage("Suche neuen Stranger...");
     }
 });

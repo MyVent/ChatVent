@@ -2,39 +2,35 @@ const WebSocket = require('ws');
 const PORT = process.env.PORT || 3000;
 const wss = new WebSocket.Server({ port: PORT });
 
-let clients = [];
+let waiting = null;
 
 wss.on('connection', (ws) => {
-    clients.push(ws);
     ws.partner = null;
-    findPartner(ws);
 
     ws.on('message', (msg) => {
-        if(msg === '__NEW__'){
-            findPartner(ws, true);
+        if(msg === "__FIND__"){
+            if(waiting && waiting !== ws){
+                // Partner gefunden
+                ws.partner = waiting;
+                waiting.partner = ws;
+
+                ws.send("__CONNECTED__");
+                waiting.send("__CONNECTED__");
+
+                waiting = null;
+            } else {
+                waiting = ws;
+            }
         } else if(ws.partner){
-            ws.partner.send(msg);
+            ws.partner.send(msg); // Nachricht weiterleiten
         }
     });
 
     ws.on('close', () => {
-        if(ws.partner) ws.partner.partner = null;
-        clients = clients.filter(c => c !== ws);
+        if(ws.partner){
+            ws.partner.send("Stranger hat die Verbindung beendet.");
+            ws.partner.partner = null;
+        }
+        if(waiting === ws) waiting = null;
     });
 });
-
-function findPartner(ws, reset=false){
-    if(reset && ws.partner){
-        ws.partner.partner = null;
-        ws.partner = null;
-    }
-    for(let client of clients){
-        if(client !== ws && !client.partner){
-            ws.partner = client;
-            client.partner = ws;
-            ws.send("Verbunden mit einem Stranger!");
-            client.send("Verbunden mit einem Stranger!");
-            break;
-        }
-    }
-}
