@@ -43,7 +43,7 @@ function unpair(ws){
 }
 
 // very simple bad word filter
-const bannedWords = [/badword1/i, /badword2/i];
+const bannedWords = [/nigga/i, /badword2/i];
 function cleanMessage(msg){
   let clean = msg;
   for(const w of bannedWords){
@@ -130,3 +130,4 @@ setInterval(()=>{
 }, 30000);
 
 server.listen(PORT, ()=> console.log('ChatVent server listening on', PORT));
+
