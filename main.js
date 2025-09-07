@@ -5,8 +5,7 @@
 */
 
 // ---- Konfiguration ----
-const WS_SERVER = "wss://chatvent.onrender.com";
-
+const WS_SERVER = "wss://chatvent.onrender.com"; // deine feste Render-URL
 
 // ---- DOM-Elemente ----
 let ws = null;
@@ -85,10 +84,10 @@ function handleServerMessage(msg) {
       break;
     case "unpaired":
       paired = false;
-      setStatus("waiting");
+      setStatus("online — ready");
       btnDisconnect.disabled = true;
-      btnConnect.disabled = false;
-      logMessage("Stranger disconnected.", "them");
+      btnConnect.disabled = false; // ✅ Button wieder aktivieren
+      logMessage("Stranger disconnected. Click 'Find a Stranger' to meet someone new.", "them");
       break;
     default:
       console.log("unknown", msg);
@@ -108,6 +107,11 @@ btnConnect.addEventListener("click", () => {
 btnDisconnect.addEventListener("click", () => {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: "leave" }));
+    // UI sofort freigeben, auch wenn Server verzögert antwortet
+    paired = false;
+    btnDisconnect.disabled = true;
+    btnConnect.disabled = false;
+    setStatus("online — ready");
   }
 });
 
