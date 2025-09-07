@@ -1,4 +1,3 @@
-// server.js - ChatVent WebSocket Server
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -6,17 +5,13 @@ const WebSocket = require('ws');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Optional: static files if hosting client here
 app.use(express.static('public'));
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 
-// Warteschlange für wartende User
 const waiting = [];
-// Map: socket -> partner socket
 const partners = new Map();
-// Map: socket -> country
 const countries = new Map();
 
 // Hilfsfunktion zum Senden
@@ -26,8 +21,8 @@ function send(ws, obj){
 
 // Pairing-Funktion
 function pair(a, b){
-  partners.set(a, b);
-  partners.set(b, a);
+  partners.set(a,b);
+  partners.set(b,a);
 
   const countryA = countries.get(a) || 'unknown';
   const countryB = countries.get(b) || 'unknown';
@@ -48,11 +43,9 @@ function unpair(ws){
   }
 }
 
-// WebSocket-Verbindungen
 wss.on('connection', (ws)=>{
   ws.isAlive = true;
-
-  ws.on('pong', ()=> ws.isAlive = true);
+  ws.on('pong', ()=> ws.isAlive=true);
 
   ws.on('message', (raw)=>{
     let msg = null;
@@ -60,19 +53,27 @@ wss.on('connection', (ws)=>{
 
     switch(msg.type){
       case 'find':
-        // Speichere Country
-        countries.set(ws, msg.country || 'any');
+        const selectedCountry = msg.country || 'any';
+        countries.set(ws, selectedCountry);
 
-        // Wenn schon gepaart, ignoriere
         if(partners.has(ws)) return;
 
-        // Suche nach passendem Partner
-        let index = waiting.findIndex(s => {
-          if(s.readyState !== WebSocket.OPEN) return false;
-          const c1 = msg.country;
-          const c2 = countries.get(s);
-          return c1==='any' || c2==='any' || c1===c2;
-        });
+        // Versuche Partner zu finden
+        let index = -1;
+        if(selectedCountry !== 'any'){
+          // 90% Chance auf gleichen Country
+          const rand = Math.random();
+          if(rand < 0.9){
+            index = waiting.findIndex(s=>{
+              const c = countries.get(s);
+              return c===selectedCountry && s.readyState===WebSocket.OPEN;
+            });
+          }
+        }
+        // Wenn kein Country-Partner gefunden -> nimm irgendwen
+        if(index === -1){
+          index = waiting.findIndex(s=>s.readyState===WebSocket.OPEN);
+        }
 
         if(index !== -1){
           const other = waiting.splice(index,1)[0];
@@ -109,26 +110,24 @@ wss.on('connection', (ws)=>{
   });
 
   ws.on('close', ()=>{
-    // Entferne aus Warteschlange
     const idx = waiting.indexOf(ws);
-    if(idx !== -1) waiting.splice(idx,1);
+    if(idx!==-1) waiting.splice(idx,1);
     unpair(ws);
     countries.delete(ws);
   });
 });
 
-// WebSocket Upgrade
-server.on('upgrade', (request, socket, head) => {
-  if(request.url.startsWith('/ws')){
-    wss.handleUpgrade(request, socket, head, ws=>{
-      wss.emit('connection', ws, request);
+server.on('upgrade', (req, socket, head)=>{
+  if(req.url.startsWith('/ws')){
+    wss.handleUpgrade(req, socket, head, ws=>{
+      wss.emit('connection', ws, req);
     });
   } else {
     socket.destroy();
   }
 });
 
-// Heartbeat zur Stabilität
+// Heartbeat
 setInterval(()=>{
   wss.clients.forEach(ws=>{
     if(ws.isAlive===false) return ws.terminate();
