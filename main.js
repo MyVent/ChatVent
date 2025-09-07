@@ -48,6 +48,7 @@ function connectWS(){
     paired=false;
     btnDisconnect.disabled=true;
     btnConnect.disabled=false;
+    messagesEl.innerHTML = ''; // Chat löschen, falls Server dicht macht
   });
 }
 
@@ -70,7 +71,8 @@ function handleServerMessage(msg){
       paired=false;
       setStatus('waiting');
       btnDisconnect.disabled=true;
-      btnConnect.disabled=false;  // <--- Jetzt wieder aktiv
+      btnConnect.disabled=false;
+      messagesEl.innerHTML = ''; // Chat leeren beim Disconnect
       logMessage("Stranger disconnected.",'system');
       break;
   }
@@ -90,10 +92,10 @@ btnConnect.addEventListener("click", ()=>{
 btnDisconnect.addEventListener("click", ()=>{
   if(ws && ws.readyState===WebSocket.OPEN){
     ws.send(JSON.stringify({type:'leave'}));
-    // Direkt hier auch Button zurücksetzen, falls Server etwas langsamer ist
     paired=false;
     btnConnect.disabled=false;
     btnDisconnect.disabled=true;
+    messagesEl.innerHTML = ''; // Chat leeren wenn ich selbst disconnecte
   }
 });
 
