@@ -65,32 +65,6 @@ function handleServerMessage(msg){
   }
 }
 
-function handleServerMessage(msg){
-  switch(msg.type){
-    case "paired":
-      paired = true;
-      setStatus(`paired with ${msg.country || 'unknown'}`);
-      btnDisconnect.disabled=false;
-      btnConnect.disabled=true;
-      logMessage(`You are now connected to a stranger from ${msg.country || 'unknown'}. Say hi!`, 'them');
-      break;
-    case "msg":
-      logMessage(msg.text,'them');
-      break;
-    case "system":
-      logMessage("[system] "+msg.text,'them');
-      break;
-    case "unpaired":
-      paired=false;
-      setStatus('waiting');
-      btnDisconnect.disabled=true;
-      btnConnect.disabled=false;
-      logMessage("Stranger disconnected.",'them');
-      break;
-  }
-}
-
-
 btnConnect.addEventListener("click", ()=>{
   if(!ws) connectWS();
   if(ws && ws.readyState===WebSocket.OPEN){
@@ -103,7 +77,8 @@ btnConnect.addEventListener("click", ()=>{
 
 btnDisconnect.addEventListener("click", ()=>{
   if(ws && ws.readyState===WebSocket.OPEN){
-    ws.send(JSON.stringify({type:'leave'}));}
+    ws.send(JSON.stringify({type:'leave'}));
+  }
 });
 
 form.addEventListener("submit", e=>{
