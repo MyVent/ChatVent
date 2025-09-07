@@ -1,21 +1,32 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChatVent — Random Chat</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ChatVent — Random Chat</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1 class="logo">ChatVent</h1>
-      <p class="tag">random conversations — lo-fi vibes</p>
-    </header>
+<div id="app" class="container">
+  <header class="header">
+    <h1 class="logo">ChatVent</h1>
+    <p class="tag">random conversations — lo-fi vibes</p>
+  </header>
 
-    <main class="card">
-      <section class="controls">
+  <main class="card">
+    <section class="chat-area">
+      <div id="messages" class="messages"></div>
+
+      <form id="msg-form" class="message-form" autocomplete="off">
+        <input id="msg-input" placeholder="Say something..." maxlength="1000" />
+        <button class="btn primary" type="submit">Send</button>
+      </form>
+    </section>
+
+    <aside class="sidebar">
+      <div class="controls">
         <div class="status">Status: <span id="status">offline</span></div>
         <div class="buttons">
           <select id="country-select" class="dropdown">
@@ -26,31 +37,20 @@
           <button id="btn-connect" class="btn primary">Find a Stranger</button>
           <button id="btn-disconnect" class="btn danger" disabled>Disconnect</button>
         </div>
-      </section>
+      </div>
 
-      <section class="chat-area">
-        <div id="messages" class="messages"></div>
-        <div id="typing" class="typing"></div>
+      <h3>Safety & Tips</h3>
+      <ul>
+        <li>Don't share personal info.</li>
+        <li>Use the <strong>Disconnect</strong> button to leave a conversation.</li>
+        <li>Report abuse to the moderators.</li>
+      </ul>
+    </aside>
+  </main>
 
-        <form id="msg-form" class="message-form" autocomplete="off">
-          <input id="msg-input" placeholder="Say something..." maxlength="1000" />
-          <button type="submit" class="btn send">Send</button>
-        </form>
-      </section>
+  <footer class="credit">Made with <span class="heart">♥</span> — TV Girl inspired UI • ChatVent</footer>
+</div>
 
-      <aside class="sidebar">
-        <h3>Safety & Tips</h3>
-        <ul>
-          <li>Don't share personal info.</li>
-          <li>Use <strong>Disconnect</strong> to leave a conversation.</li>
-          <li>Report abuse to the moderators.</li>
-        </ul>
-      </aside>
-    </main>
-
-    <footer class="credit">Made with <span class="heart">♥</span> — ChatVent</footer>
-  </div>
-
-  <script src="/main.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
