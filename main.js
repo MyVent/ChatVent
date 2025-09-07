@@ -5,13 +5,8 @@
 */
 
 // ---- Konfiguration ----
-const WS_SERVER =
-  window.__CHATVENT_WS__ ||
-  (location.protocol === "https://chatvent.onrender.com"
-    ? "wss://"
-    : "ws://") +
-    location.hostname +
-    (location.port ? ":" + location.port : "");
+const WS_SERVER = "wss://chatvent.onrender.com";
+
 
 // ---- DOM-Elemente ----
 let ws = null;
