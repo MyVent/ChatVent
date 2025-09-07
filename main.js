@@ -11,7 +11,6 @@ const input = document.getElementById("msg-input");
 
 function logMessage(text, who="them"){
   const div = document.createElement("div");
-
   if(who==="system"){
     div.className="message system";
   } else {
@@ -20,11 +19,9 @@ function logMessage(text, who="them"){
     meta.textContent = who==="me"?"You":"Stranger";
     div.appendChild(meta);
   }
-
   const body = document.createElement("div"); body.className="body";
   body.textContent=text;
   div.appendChild(body);
-
   messagesEl.appendChild(div);
   messagesEl.scrollTop=messagesEl.scrollHeight;
 }
@@ -46,8 +43,11 @@ function connectWS(){
   });
 
   ws.addEventListener("close", ()=>{
-    setStatus("offline"); ws=null; paired=false;
-    btnDisconnect.disabled=true; btnConnect.disabled=false;
+    setStatus("offline");
+    ws=null;
+    paired=false;
+    btnDisconnect.disabled=true;
+    btnConnect.disabled=false;
   });
 }
 
@@ -56,7 +56,8 @@ function handleServerMessage(msg){
     case "paired":
       paired=true;
       setStatus(`Paired with ${msg.country||'unknown'}`);
-      btnDisconnect.disabled=false; btnConnect.disabled=true;
+      btnDisconnect.disabled=false;
+      btnConnect.disabled=true;
       logMessage(`You are now connected to a stranger from ${msg.country||'unknown'}. Say hi!`,'system');
       break;
     case "msg":
@@ -66,13 +67,16 @@ function handleServerMessage(msg){
       logMessage(msg.text,'system');
       break;
     case "unpaired":
-      paired=false; setStatus('waiting');
-      btnDisconnect.disabled=true; btnConnect.disabled=false;
+      paired=false;
+      setStatus('waiting');
+      btnDisconnect.disabled=true;
+      btnConnect.disabled=false;  // <--- Jetzt wieder aktiv
       logMessage("Stranger disconnected.",'system');
       break;
   }
 }
 
+// BUTTON EVENTS
 btnConnect.addEventListener("click", ()=>{
   if(!ws) connectWS();
   if(ws && ws.readyState===WebSocket.OPEN){
@@ -85,7 +89,12 @@ btnConnect.addEventListener("click", ()=>{
 
 btnDisconnect.addEventListener("click", ()=>{
   if(ws && ws.readyState===WebSocket.OPEN){
-    ws.send(JSON.stringify({type:'leave'}));}
+    ws.send(JSON.stringify({type:'leave'}));
+    // Direkt hier auch Button zurücksetzen, falls Server etwas langsamer ist
+    paired=false;
+    btnConnect.disabled=false;
+    btnDisconnect.disabled=true;
+  }
 });
 
 form.addEventListener("submit", e=>{
