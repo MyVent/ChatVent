@@ -162,3 +162,11 @@
     .messages{height:420px}
   }
   
+
+  /* style.css */
+.censored{
+    color: #ff3860;
+    font-weight: bold;
+    text-shadow: 0 0 5px #ff3860;
+  }
+  
