@@ -2,7 +2,9 @@ const WS_SERVER = window.__CHATVENT_WS__ || "wss://chatvent.onrender.com";
 
 let ws = null;
 let paired = false;
+let typingTimeout = null;
 const statusEl = document.getElementById("status");
+const typingEl = document.getElementById("typing-status"); // Neues Element in HTML
 const btnConnect = document.getElementById("btn-connect");
 const btnDisconnect = document.getElementById("btn-disconnect");
 const messagesEl = document.getElementById("messages");
@@ -27,6 +29,7 @@ function logMessage(text, who="them"){
 }
 
 function setStatus(s){statusEl.textContent=s;}
+function showTyping(show){ typingEl.textContent = show ? "Stranger is typing..." : ""; }
 
 function connectWS(){
   if(ws) return;
@@ -48,7 +51,8 @@ function connectWS(){
     paired=false;
     btnDisconnect.disabled=true;
     btnConnect.disabled=false;
-    messagesEl.innerHTML = ''; // Chat löschen, falls Server dicht macht
+    messagesEl.innerHTML = '';
+    showTyping(false);
   });
 }
 
@@ -63,6 +67,13 @@ function handleServerMessage(msg){
       break;
     case "msg":
       logMessage(msg.text,'them');
+      showTyping(false);
+      break;
+    case "typing":
+      showTyping(true);
+      // verschwindet nach 2 Sekunden
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(()=>showTyping(false), 2000);
       break;
     case "system":
       logMessage(msg.text,'system');
@@ -72,7 +83,8 @@ function handleServerMessage(msg){
       setStatus('waiting');
       btnDisconnect.disabled=true;
       btnConnect.disabled=false;
-      messagesEl.innerHTML = ''; // Chat leeren beim Disconnect
+      messagesEl.innerHTML = '';
+      showTyping(false);
       logMessage("Stranger disconnected.",'system');
       break;
   }
@@ -95,10 +107,12 @@ btnDisconnect.addEventListener("click", ()=>{
     paired=false;
     btnConnect.disabled=false;
     btnDisconnect.disabled=true;
-    messagesEl.innerHTML = ''; // Chat leeren wenn ich selbst disconnecte
+    messagesEl.innerHTML = '';
+    showTyping(false);
   }
 });
 
+// Nachricht senden
 form.addEventListener("submit", e=>{
   e.preventDefault();
   const text=input.value.trim();
@@ -110,6 +124,13 @@ form.addEventListener("submit", e=>{
     logMessage("Not connected. Click 'Find a Stranger' first.",'system');
   }
   input.value='';
+});
+
+// Typing Event senden
+input.addEventListener("input", ()=>{
+  if(ws && ws.readyState===WebSocket.OPEN && paired){
+    ws.send(JSON.stringify({type:'typing'}));
+  }
 });
 
 connectWS();
