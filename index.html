@@ -1,72 +1,60 @@
 <!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ChatVent — Random Chat</title>
 
-  <!-- Fonts -->
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div id="app" class="container">
-
-    <!-- HEADER -->
     <header class="header">
       <h1 class="logo">ChatVent</h1>
       <p class="tag">random conversations — dark neon vibes</p>
     </header>
 
-    <!-- MAIN CARD -->
     <main class="card">
-
-      <!-- CHAT & CONTROLS -->
-      <section class="chat-section">
-
-        <!-- CONTROLS -->
-        <div class="controls">
-          <div class="status">
-            Status: <span id="status">offline</span>
-          </div>
-          <div class="buttons">
-            <button id="btn-connect" class="btn primary">Find a Stranger</button>
-            <button id="btn-disconnect" class="btn danger" disabled>Disconnect</button>
-          </div>
+      <section class="controls">
+        <div class="status">Status: <span id="status">offline</span></div>
+        <div class="buttons">
+          <select id="country-select" class="btn">
+            <option value="any">Any Country</option>
+            <option value="DE">Germany</option>
+            <option value="US">USA</option>
+          </select>
+          <button id="btn-connect" class="btn primary">Find a Stranger</button>
+          <button id="btn-disconnect" class="btn danger" disabled>Disconnect</button>
         </div>
-
-        <!-- CHAT AREA -->
-        <div class="chat-area">
-          <div id="messages" class="messages"></div>
-
-          <form id="msg-form" class="message-form" autocomplete="off">
-            <input id="msg-input" placeholder="Say something..." maxlength="1000" />
-            <button class="btn send" type="submit">Send</button>
-          </form>
-        </div>
-
       </section>
 
-      <!-- SIDEBAR -->
+      <section class="chat-area">
+        <div id="messages" class="messages"></div>
+        <form id="msg-form" class="message-form" autocomplete="off">
+          <input id="msg-input" placeholder="Say something..." maxlength="1000">
+          <button class="btn send" type="submit">Send</button>
+        </form>
+      </section>
+
       <aside class="sidebar">
-        <h3>Tips & Safety</h3>
+        <h3>Safety & Tips</h3>
         <ul>
           <li>Don't share personal info.</li>
           <li>Use <strong>Disconnect</strong> to leave a conversation.</li>
-          <li>Report abuse to moderators.</li>
-          <li>Enjoy neon vibes! ✨</li>
+          <li>Report abuse to the moderators.</li>
         </ul>
       </aside>
-
     </main>
 
-    <!-- FOOTER -->
-    <footer class="credit">
-      Made with <span class="heart">♥</span> — TV Girl inspired • ChatVent
-    </footer>
-
+    <footer class="credit">Made with <span class="heart">♥</span> — ChatVent</footer>
   </div>
 
+  <!-- Set WebSocket URL for Render.com -->
+  <script>
+    window.__CHATVENT_WS__ = "wss://chatvent.onrender.com";
+  </script>
   <script src="/main.js"></script>
 </body>
 </html>
