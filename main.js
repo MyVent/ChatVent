@@ -9,8 +9,8 @@ const messagesEl = document.getElementById("messages");
 const form = document.getElementById("msg-form");
 const input = document.getElementById("msg-input");
 
-// Hilfsfunktion für System- und Chatnachrichten
-function logMessage(text, who="them") {
+// Chat-Hilfsfunktion
+function logMessage(text, who="them"){
   const div = document.createElement("div");
   div.className = "message " + (who==="me"?"me":(who==="system"?"system":"them"));
   const meta = document.createElement("div"); meta.className="meta";
@@ -24,7 +24,7 @@ function logMessage(text, who="them") {
 
 function setStatus(s){ statusEl.textContent=s; }
 
-// WebSocket-Verbindung
+// Verbindung
 function connectWS(){
   if(ws) return;
   setStatus("connecting...");
@@ -51,10 +51,9 @@ function handleServerMessage(msg){
   switch(msg.type){
     case "paired":
       paired=true;
-      const country = msg.country || document.getElementById("country-select").value || 'unknown';
-      setStatus(`paired with someone from ${country}`);
+      setStatus("paired");
       btnDisconnect.disabled=false; btnConnect.disabled=true;
-      logMessage(`You are now connected to a stranger from ${country}. Say hi!`,'system');
+      logMessage("You are now connected. Say hi!", "system");
       break;
     case "msg":
       logMessage(msg.text,'them');
@@ -66,7 +65,7 @@ function handleServerMessage(msg){
       setStatus("Stranger is typing...");
       break;
     case "stopTyping":
-      setStatus(paired ? "paired" : "online — ready");
+      setStatus(paired?"paired":"online — ready");
       break;
     case "unpaired":
       paired=false; setStatus('waiting');
@@ -81,7 +80,8 @@ btnConnect.addEventListener("click", ()=>{
   if(!ws) connectWS();
   if(ws && ws.readyState===WebSocket.OPEN){
     const country=document.getElementById("country-select").value;
-    ws.send(JSON.stringify({type:'find', country}));
+    // Wir senden unser Land an den Server
+    ws.send(JSON.stringify({type:'find', countryOwn: country}));
     setStatus("searching...");
     btnConnect.disabled=true;
   }
