@@ -12,23 +12,30 @@ app.use(express.static('public'));
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 
-// Queue für wartende User
+// Warteschlange für wartende User
 const waiting = [];
-// Map socket -> peer socket
+// Map: socket -> partner socket
 const partners = new Map();
-// Map socket -> country
+// Map: socket -> country
 const countries = new Map();
 
+// Hilfsfunktion zum Senden
 function send(ws, obj){
   try{ ws.send(JSON.stringify(obj)); }catch(e){}
 }
 
 // Pairing-Funktion
-function pair(a,b){
-  partners.set(a,b);
-  partners.set(b,a);
-  send(a,{type:'paired', country:countries.get(b)});
-  send(b,{type:'paired', country:countries.get(a)});
+function pair(a, b){
+  partners.set(a, b);
+  partners.set(b, a);
+
+  const countryA = countries.get(a) || 'unknown';
+  const countryB = countries.get(b) || 'unknown';
+
+  // Sende an A das Land von B
+  send(a, { type:'paired', country: countryB });
+  // Sende an B das Land von A
+  send(b, { type:'paired', country: countryA });
 }
 
 // Unpairing
@@ -41,6 +48,7 @@ function unpair(ws){
   }
 }
 
+// WebSocket-Verbindungen
 wss.on('connection', (ws)=>{
   ws.isAlive = true;
 
@@ -55,7 +63,7 @@ wss.on('connection', (ws)=>{
         // Speichere Country
         countries.set(ws, msg.country || 'any');
 
-        // Wenn schon gepaart, ignorieren
+        // Wenn schon gepaart, ignoriere
         if(partners.has(ws)) return;
 
         // Suche nach passendem Partner
@@ -120,7 +128,7 @@ server.on('upgrade', (request, socket, head) => {
   }
 });
 
-// Heartbeat
+// Heartbeat zur Stabilität
 setInterval(()=>{
   wss.clients.forEach(ws=>{
     if(ws.isAlive===false) return ws.terminate();
