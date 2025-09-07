@@ -1,4 +1,4 @@
-// server.js - ChatVent mit Textanalyse via banned.txt
+// server.js - ChatVent mit robuster Textanalyse via banned.txt
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -42,17 +42,29 @@ function unpair(ws){
 const bannedFile = path.join(__dirname, 'banned.txt');
 let bannedWords = [];
 
-try {
-  const data = fs.readFileSync(bannedFile, 'utf-8');
-  bannedWords = data
-    .split(/\r?\n/)
-    .filter(line => line.trim().length > 0)
-    .map(word => new RegExp(word, 'gi'));
-  console.log('Banned words loaded:', bannedWords.length);
-} catch (err) {
-  console.warn('banned.txt konnte nicht geladen werden', err);
+// Funktion: Escaped Regex für wörtliche Suche
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Lade banned words
+function loadBannedWords() {
+  try {
+    const data = fs.readFileSync(bannedFile, 'utf-8');
+    bannedWords = data
+      .split(/\r?\n/)
+      .filter(line => line.trim().length > 0)
+      .map(word => new RegExp(escapeRegExp(word.trim()), 'gi'));
+    console.log('Banned words loaded:', bannedWords.length);
+  } catch (err) {
+    console.warn('banned.txt konnte nicht geladen werden', err);
+  }
+}
+
+// Initial laden
+loadBannedWords();
+
+// Zensur-Funktion
 function sanitizeMessage(text){
   let clean = text;
   bannedWords.forEach((regex) => {
@@ -70,7 +82,7 @@ wss.on('connection', (ws)=>{
     let msg = null; try { msg = JSON.parse(raw); } catch(e){ return; }
     switch(msg.type){
       case 'find':
-        if(partners.has(ws)) return; // schon gepairt
+        if(partners.has(ws)) return;
         if(waiting.length){
           const other = waiting.shift();
           if(other && other.readyState===WebSocket.OPEN){
