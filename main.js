@@ -132,23 +132,3 @@ form.addEventListener("submit", (e) => {
 // ---- Auto-Connect ----
 connectWS();
 
-
-//Filter
-function logMessage(text, who='them'){
-    const div = document.createElement('div');
-    div.className = 'message ' + (who === 'me' ? 'me' : 'them');
-  
-    // Textteile markieren (optional)
-    const meta = document.createElement('div'); meta.className='meta';
-    meta.textContent = who === 'me' ? 'You' : 'Stranger';
-    const body = document.createElement('div'); body.className='body';
-    
-    // gefilterte Wörter mit <span class="censored">****</span>
-    body.innerHTML = text.replace(/\*{2,}/g, '<span class="censored">$&</span>');
-  
-    div.appendChild(meta);
-    div.appendChild(body);
-    messagesEl.appendChild(div);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-  }
-  
