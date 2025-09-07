@@ -141,5 +141,24 @@ setInterval(()=>{
   });
 }, 30000);
 
+wss.on('connection', (ws)=>{
+    ws.isAlive = true;
+    ws.on('pong', () => ws.isAlive = true);
+  
+    broadcastUserCount(); // neuer User online
+  
+    ws.on('message', (raw)=>{
+      // ... deine bestehende Logik ...
+    });
+  
+    ws.on('close', ()=>{
+      const idx = waiting.indexOf(ws);
+      if(idx!==-1) waiting.splice(idx,1);
+      unpair(ws);
+      broadcastUserCount(); // User weg → Count updaten
+    });
+  });
+  
+
 // ---- Start Server ----
 server.listen(PORT, ()=> console.log('ChatVent server listening on', PORT));

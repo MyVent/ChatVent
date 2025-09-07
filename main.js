@@ -132,3 +132,26 @@ form.addEventListener("submit", (e) => {
 // ---- Auto-Connect ----
 connectWS();
 
+const userCountEl = document.getElementById('user-count');
+
+function handleServerMessage(msg){
+  switch(msg.type){
+    case 'paired':
+      // ...bestehende Logik...
+      break;
+    case 'msg':
+      // ...
+      break;
+    case 'system':
+      // ...
+      break;
+    case 'unpaired':
+      // ...
+      break;
+    case 'usercount':
+      userCountEl.textContent = msg.count;
+      break;
+    default:
+      console.log('unknown', msg);
+  }
+}
