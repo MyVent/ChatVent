@@ -1,62 +1,132 @@
+// server.js - extended pairing server with logging & simple moderation
+const express = require('express');
+const http = require('http');
 const WebSocket = require('ws');
+
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-const wss = new WebSocket.Server({ port: PORT });
+// Serve static client (optional). When deploying, you may host client separately (Netlify)
+app.use(express.static('public'));
 
-let waitingClient = null;
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ noServer: true });
+
+// Keep a queue of sockets waiting to be paired
+const waiting = [];
+// Map socket -> peer socket
 const partners = new Map();
 
-wss.on('connection', (ws) => {
+// Track message counts for simple spam protection
+const msgCounts = new Map();
+const RATE_LIMIT = 20; // max messages per minute
 
-    ws.on('message', (msg) => {
+function send(ws, obj){
+  try{ ws.send(JSON.stringify(obj)) }catch(e){}
+}
 
-        if(msg === "__FIND__") {
+function pair(a,b){
+  partners.set(a,b); partners.set(b,a);
+  send(a,{type:'paired'});
+  send(b,{type:'paired'});
+  console.log('Paired two users');
+}
 
-            // Alte Verbindung trennen
-            if(partners.has(ws)){
-                const oldPartner = partners.get(ws);
-                if(oldPartner.readyState === WebSocket.OPEN) oldPartner.send("__DISCONNECTED__");
-                partners.delete(oldPartner);
-                partners.delete(ws);
-            }
+function unpair(ws){
+  const p = partners.get(ws);
+  if(p){
+    partners.delete(ws);
+    partners.delete(p);
+    try{ p.send(JSON.stringify({type:'unpaired'})); }catch(e){}
+    console.log('Users unpaired');
+  }
+}
 
-            // Partner finden
-            if(waitingClient && waitingClient !== ws){
-                partners.set(ws, waitingClient);
-                partners.set(waitingClient, ws);
+// very simple bad word filter
+const bannedWords = [/badword1/i, /badword2/i];
+function cleanMessage(msg){
+  let clean = msg;
+  for(const w of bannedWords){
+    clean = clean.replace(w, '***');
+  }
+  return clean;
+}
 
-                ws.send("__CONNECTED__");
-                waitingClient.send("__CONNECTED__");
+wss.on('connection', (ws, req)=>{
+  ws.isAlive = true;
+  ws.on('pong', ()=> ws.isAlive = true);
 
-                waitingClient = null; // Warteliste leeren
-            } else {
-                waitingClient = ws;
-                ws.send("__WAITING__"); // Statusmeldung „warte auf Stranger“
-            }
+  ws.on('message', (raw)=>{
+    let msg = null; try{ msg = JSON.parse(raw) }catch(e){ return }
 
-            return;
+    switch(msg.type){
+      case 'find':
+        if(partners.has(ws)) return;
+        if(waiting.length){
+          const other = waiting.shift();
+          if(other && other.readyState === WebSocket.OPEN){
+            pair(ws, other);
+          }
+        } else {
+          waiting.push(ws);
+          send(ws, {type:'system', text:'waiting for a stranger...'});
+        }
+        break;
+      case 'leave':
+        unpair(ws);
+        send(ws,{type:'system', text:'left conversation.'});
+        break;
+      case 'msg':
+        const now = Date.now();
+        const bucket = msgCounts.get(ws) || {count:0, start:now};
+        if(now - bucket.start > 60000){
+          bucket.count = 0; bucket.start = now;
+        }
+        bucket.count++;
+        msgCounts.set(ws,bucket);
+
+        if(bucket.count > RATE_LIMIT){
+          send(ws,{type:'system', text:'Rate limit exceeded. Please wait.'});
+          return;
         }
 
-        // Normale Nachricht an Partner weiterleiten
-        if(partners.has(ws)){
-            const partner = partners.get(ws);
-            if(partner.readyState === WebSocket.OPEN){
-                partner.send(msg);
-            }
+        const peer = partners.get(ws);
+        if(peer && peer.readyState === WebSocket.OPEN){
+          const clean = cleanMessage(msg.text);
+          send(peer, {type:'msg', text: clean});
+        } else {
+          send(ws,{type:'system', text:'No peer connected.'});
         }
-    });
+        break;
+      default:
+        break;
+    }
+  });
 
-    ws.on('close', () => {
-        // Partner benachrichtigen
-        if(partners.has(ws)){
-            const partner = partners.get(ws);
-            if(partner.readyState === WebSocket.OPEN) partner.send("__DISCONNECTED__");
-            partners.delete(partners.get(ws));
-            partners.delete(ws);
-        }
-
-        if(waitingClient === ws) waitingClient = null;
-    });
+  ws.on('close', ()=>{
+    const idx = waiting.indexOf(ws);
+    if(idx !== -1) waiting.splice(idx,1);
+    unpair(ws);
+    msgCounts.delete(ws);
+  });
 });
 
-console.log(`WebSocket Server läuft auf Port ${PORT}`);
+server.on('upgrade', (request, socket, head) => {
+  if(request.url.startsWith('/ws')){
+    wss.handleUpgrade(request, socket, head, function done(ws) {
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
+// heartbeat
+setInterval(()=>{
+  wss.clients.forEach((ws)=>{
+    if(ws.isAlive === false) return ws.terminate();
+    ws.isAlive = false; ws.ping();
+  });
+}, 30000);
+
+server.listen(PORT, ()=> console.log('ChatVent server listening on', PORT));

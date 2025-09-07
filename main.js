@@ -1,75 +1,134 @@
-const messages = document.getElementById("messages");
-const chatForm = document.getElementById("chat-form");
-const messageInput = document.getElementById("message-input");
-const newStranger = document.getElementById("new-stranger");
+/* main.js - ChatVent Client
+   - verbindet sich mit WebSocket-Server
+   - unterstützt pairing, messaging, leave
+   - UI: Status, Buttons, Nachrichtenfenster
+*/
 
+// ---- Konfiguration ----
+const WS_SERVER =
+  window.__CHATVENT_WS__ ||
+  (location.protocol === "https://chatvent.onrender.com"
+    ? "wss://"
+    : "ws://") +
+    location.hostname +
+    (location.port ? ":" + location.port : "");
+
+// ---- DOM-Elemente ----
 let ws = null;
-let connected = false;
+let paired = false;
+const statusEl = document.getElementById("status");
+const btnConnect = document.getElementById("btn-connect");
+const btnDisconnect = document.getElementById("btn-disconnect");
+const messagesEl = document.getElementById("messages");
+const form = document.getElementById("msg-form");
+const input = document.getElementById("msg-input");
 
-function addMessage(msg,type="stranger"){
-    const div = document.createElement("div");
-    div.textContent = msg;
-    div.classList.add("message", type);
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
+// ---- UI-Helfer ----
+function logMessage(text, who = "them") {
+  const div = document.createElement("div");
+  div.className = "message " + (who === "me" ? "me" : "them");
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.textContent = who === "me" ? "You" : "Stranger";
+  const body = document.createElement("div");
+  body.className = "body";
+  body.textContent = text;
+  div.appendChild(meta);
+  div.appendChild(body);
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-function connectToStranger(){
-    if(!ws || ws.readyState !== WebSocket.OPEN){
-        ws = new WebSocket("wss://chatvent.onrender.com"); // Render URL einfügen
-
-        ws.onopen = ()=>{
-            ws.send("__FIND__");
-            addMessage("Suche nach einem Stranger...", "stranger");
-        }
-
-        ws.onmessage = async (event)=>{
-            let msg;
-            if(event.data instanceof Blob){
-                msg = await event.data.text();
-            } else {
-                msg = event.data;
-            }
-
-            if(msg === "__CONNECTED__"){
-                connected = true;
-                addMessage("Verbunden mit einem Stranger!", "stranger");
-            } else if(msg === "__WAITING__"){
-                connected = false;
-                addMessage("Warte auf einen Stranger...", "stranger");
-            } else if(msg === "__DISCONNECTED__"){
-                connected = false;
-                addMessage("Stranger hat die Verbindung beendet.", "stranger");
-            } else {
-                if(connected) addMessage(msg,"stranger");
-            }
-        }
-
-        ws.onclose = ()=>{
-            connected = false;
-            addMessage("Verbindung getrennt.", "stranger");
-        }
-    } else {
-        if(connected){
-            connected = false;
-            addMessage("Verbindung zum alten Stranger getrennt. Suche neuen Stranger...", "stranger");
-        }
-        ws.send("__FIND__");
-    }
+function setStatus(s) {
+  statusEl.textContent = s;
 }
 
-// Eigene Nachrichten senden
-chatForm.addEventListener("submit", e=>{
-    e.preventDefault();
-    const msg = messageInput.value.trim();
-    if(msg && ws && ws.readyState===WebSocket.OPEN && connected){
-        ws.send(msg);
-        addMessage(msg,"self");
-        messageInput.value="";
-    }
-})
+// ---- Verbindung ----
+function connectWS() {
+  if (ws) return;
+  setStatus("connecting...");
+  ws = new WebSocket(WS_SERVER + "/ws");
 
-// Neuer Stranger Button
-newStranger.addEventListener("click", ()=>{
-    connectToStranger();
-})
+  ws.addEventListener("open", () => {
+    setStatus("online — ready");
+    btnConnect.disabled = false;
+  });
+
+  ws.addEventListener("message", (ev) => {
+    try {
+      const data = JSON.parse(ev.data);
+      handleServerMessage(data);
+    } catch (e) {
+      console.warn("invalid message", ev.data);
+    }
+  });
+
+  ws.addEventListener("close", () => {
+    setStatus("offline");
+    ws = null;
+    paired = false;
+    btnDisconnect.disabled = true;
+    btnConnect.disabled = false;
+  });
+}
+
+// ---- Nachrichten vom Server ----
+function handleServerMessage(msg) {
+  switch (msg.type) {
+    case "paired":
+      paired = true;
+      setStatus("paired");
+      btnDisconnect.disabled = false;
+      btnConnect.disabled = true;
+      logMessage("You are now connected to a stranger. Say hi!", "them");
+      break;
+    case "msg":
+      logMessage(msg.text, "them");
+      break;
+    case "system":
+      logMessage("[system] " + msg.text, "them");
+      break;
+    case "unpaired":
+      paired = false;
+      setStatus("waiting");
+      btnDisconnect.disabled = true;
+      btnConnect.disabled = false;
+      logMessage("Stranger disconnected.", "them");
+      break;
+    default:
+      console.log("unknown", msg);
+  }
+}
+
+// ---- Buttons ----
+btnConnect.addEventListener("click", () => {
+  if (!ws) connectWS();
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: "find" }));
+    setStatus("searching...");
+    btnConnect.disabled = true;
+  }
+});
+
+btnDisconnect.addEventListener("click", () => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: "leave" }));
+  }
+});
+
+// ---- Nachricht senden ----
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
+  logMessage(text, "me");
+  if (ws && ws.readyState === WebSocket.OPEN && paired) {
+    ws.send(JSON.stringify({ type: "msg", text }));
+  } else {
+    logMessage("Not connected. Click 'Find a Stranger' first.", "them");
+  }
+  input.value = "";
+});
+
+// ---- Auto-Connect ----
+connectWS();

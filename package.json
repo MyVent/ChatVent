@@ -1,16 +1,30 @@
 {
   "name": "chatvent",
   "version": "1.0.0",
-  "main": "main.js",
+  "description": "Anonymous random chat (ChatVent) — WebSocket-based pairing like Omegle, styled in TV Girl aesthetics.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "chat",
+    "random",
+    "omegle",
+    "websocket",
+    "express",
+    "chatvent"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
-    "ws": "^8.18.3"
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.x"
   }
 }
