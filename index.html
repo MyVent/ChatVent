@@ -1,58 +1,66 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ChatVent — Random Chat</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatVent — Random Chat</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<div id="app" class="container">
-  <header class="header">
-    <h1 class="logo">ChatVent</h1>
-    <p class="tag">random conversations — dark vibes</p>
-  </header>
+  <div id="app" class="container">
+    <header class="header">
+      <h1 class="logo">ChatVent</h1>
+      <p class="tag">Random Conversations — Dark Lo-Fi</p>
+    </header>
 
-  <main class="card">
-    <section class="controls">
-      <div class="status">Status: <span id="status">offline</span></div>
-      <div class="status-container">
-        <div id="status">offline</div>
-        <div id="typing-status" style="font-size:12px; color:#7f5af0;"></div>
-      </div>
-      
-      <div class="buttons">
-        <select id="country-select" class="country-select">
-          <option value="any">Any</option>
-          <option value="DE">Germany</option>
-          <option value="USA">USA</option>
-        </select>
-        <button id="btn-connect" class="btn primary">Find a Stranger</button>
-        <button id="btn-disconnect" class="btn danger" disabled>Disconnect</button>
-      </div>
-    </section>
+    <main class="card">
+      <!-- Controls -->
+      <section class="controls">
+        <div class="status-container">
+          <div class="status" id="status">offline</div>
+          <div id="typing-status" style="font-size:12px; color:#7f5af0;"></div>
+        </div>
+        <div class="buttons">
+          <select id="country-select" class="country-select">
+            <option value="any">Any Country</option>
+            <option value="DE">Germany</option>
+            <option value="US">USA</option>
+          </select>
+          <button id="btn-connect" class="btn primary">Find Stranger</button>
+          <button id="btn-disconnect" class="btn danger" disabled>Disconnect</button>
+        </div>
+      </section>
 
-    <section class="chat-area">
-      <div id="messages" class="messages"></div>
-      <form id="msg-form" class="message-form" autocomplete="off">
-        <input id="msg-input" placeholder="Say something..." maxlength="1000" />
-        <button type="submit" class="btn send">Send</button>
-      </form>
-    </section>
+      <!-- Chat -->
+      <section class="chat-area">
+        <div id="messages" class="messages"></div>
+        <form id="msg-form" class="message-form" autocomplete="off">
+          <input id="msg-input" placeholder="Say something..." maxlength="1000" />
+          <button type="submit">Send</button>
+        </form>
+      </section>
 
-    <aside class="sidebar">
-      <h3>Safety & Tips</h3>
-      <ul>
-        <li>Don't share personal info.</li>
-        <li>Use the <strong>Disconnect</strong> button to leave a conversation.</li>
-        <li>Report abuse to the moderators.</li>
-      </ul>
-    </aside>
-  </main>
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <h3>Tips & Safety</h3>
+        <ul>
+          <li>Don't share personal info.</li>
+          <li>Use the <strong>Disconnect</strong> button to leave a conversation.</li>
+          <li>Report abuse if needed.</li>
+        </ul>
+      </aside>
+    </main>
 
-  <footer class="credit">Made with <span class="heart">♥</span> — ChatVent</footer>
-</div>
-<script src="main.js"></script>
+    <footer class="credit">
+      Made with <span class="heart">♥</span> — ChatVent
+    </footer>
+  </div>
+
+  <!-- Client JS -->
+  <script src="/main.js"></script>
 </body>
 </html>
