@@ -3,8 +3,9 @@ const WS_SERVER = window.__CHATVENT_WS__ || "wss://chatvent.onrender.com";
 let ws = null;
 let paired = false;
 let typingTimeout = null;
+
 const statusEl = document.getElementById("status");
-const typingEl = document.getElementById("typing-status"); // Neues Element in HTML
+const typingEl = document.getElementById("typing-status");
 const btnConnect = document.getElementById("btn-connect");
 const btnDisconnect = document.getElementById("btn-disconnect");
 const messagesEl = document.getElementById("messages");
@@ -25,16 +26,16 @@ function logMessage(text, who="them"){
   body.textContent=text;
   div.appendChild(body);
   messagesEl.appendChild(div);
-  messagesEl.scrollTop=messagesEl.scrollHeight;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-function setStatus(s){statusEl.textContent=s;}
+function setStatus(s){ statusEl.textContent = s; }
 function showTyping(show){ typingEl.textContent = show ? "Stranger is typing..." : ""; }
 
 function connectWS(){
   if(ws) return;
   setStatus("connecting...");
-  ws=new WebSocket(WS_SERVER+"/ws");
+  ws = new WebSocket(WS_SERVER+"/ws");
 
   ws.addEventListener("open", ()=>{
     setStatus("online — ready");
@@ -42,16 +43,17 @@ function connectWS(){
   });
 
   ws.addEventListener("message", ev=>{
-    try{handleServerMessage(JSON.parse(ev.data));}catch(e){console.warn("invalid message", ev.data);}
+    try{ handleServerMessage(JSON.parse(ev.data)); }
+    catch(e){ console.warn("invalid message", ev.data); }
   });
 
   ws.addEventListener("close", ()=>{
     setStatus("offline");
-    ws=null;
-    paired=false;
+    ws = null;
+    paired = false;
     btnDisconnect.disabled=true;
     btnConnect.disabled=false;
-    messagesEl.innerHTML = '';
+    messagesEl.innerHTML='';
     showTyping(false);
   });
 }
@@ -61,8 +63,7 @@ function handleServerMessage(msg){
     case "paired":
       paired=true;
       setStatus(`Paired with ${msg.country||'unknown'}`);
-      btnDisconnect.disabled=false;
-      btnConnect.disabled=true;
+      btnDisconnect.disabled=false; btnConnect.disabled=true;
       logMessage(`You are now connected to a stranger from ${msg.country||'unknown'}. Say hi!`,'system');
       break;
     case "msg":
@@ -71,7 +72,6 @@ function handleServerMessage(msg){
       break;
     case "typing":
       showTyping(true);
-      // verschwindet nach 2 Sekunden
       clearTimeout(typingTimeout);
       typingTimeout = setTimeout(()=>showTyping(false), 2000);
       break;
@@ -81,20 +81,19 @@ function handleServerMessage(msg){
     case "unpaired":
       paired=false;
       setStatus('waiting');
-      btnDisconnect.disabled=true;
-      btnConnect.disabled=false;
-      messagesEl.innerHTML = '';
+      btnDisconnect.disabled=true; btnConnect.disabled=false;
+      messagesEl.innerHTML='';
       showTyping(false);
       logMessage("Stranger disconnected.",'system');
       break;
   }
 }
 
-// BUTTON EVENTS
+// Buttons
 btnConnect.addEventListener("click", ()=>{
   if(!ws) connectWS();
   if(ws && ws.readyState===WebSocket.OPEN){
-    const country=document.getElementById("country-select").value;
+    const country = document.getElementById("country-select").value;
     ws.send(JSON.stringify({type:'find', country}));
     setStatus("searching...");
     btnConnect.disabled=true;
@@ -107,7 +106,7 @@ btnDisconnect.addEventListener("click", ()=>{
     paired=false;
     btnConnect.disabled=false;
     btnDisconnect.disabled=true;
-    messagesEl.innerHTML = '';
+    messagesEl.innerHTML='';
     showTyping(false);
   }
 });

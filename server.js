@@ -1,4 +1,4 @@
-// server.js - WebSocket mit Länder-Pairing
+// server.js - ChatVent WebSocket Server
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -11,18 +11,19 @@ app.use(express.static('public'));
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 
+// Warteschlange & Partnerzuordnung
 const waiting = [];
 const partners = new Map();
 
-function send(ws,obj){
+function send(ws, obj){
   try{ ws.send(JSON.stringify(obj)); } catch(e){}
 }
 
 function pair(a,b){
-  partners.set(a,b); partners.set(b,a);
-  // Sende dem Client das Land des Partners
-  send(a,{type:'paired', country:b.country || 'unknown'});
-  send(b,{type:'paired', country:a.country || 'unknown'});
+  partners.set(a,b);
+  partners.set(b,a);
+  send(a,{type:'paired', country:b.country});
+  send(b,{type:'paired', country:a.country});
 }
 
 function unpair(ws){
@@ -30,53 +31,55 @@ function unpair(ws){
   if(p){
     partners.delete(ws);
     partners.delete(p);
-    try{ p.send(JSON.stringify({type:'unpaired'})); } catch(e){}
+    try{ p.send(JSON.stringify({type:'unpaired'})); }catch(e){}
   }
 }
 
-wss.on('connection', ws => {
+wss.on('connection', (ws)=>{
   ws.isAlive = true;
   ws.on('pong', ()=> ws.isAlive = true);
 
-  ws.on('message', raw=>{
-    let msg=null; try{ msg=JSON.parse(raw); }catch(e){ return; }
+  ws.on('message', (raw)=>{
+    let msg = null; try{ msg = JSON.parse(raw) } catch(e){ return }
+
     switch(msg.type){
       case 'find':
-        if(partners.has(ws)) return; // schon gepaart
+        if(partners.has(ws)) return;
         ws.country = msg.country || 'any';
 
-        // Suche einen passenden Partner
-        let found=false;
-        for(let i=0;i<waiting.length;i++){
-          const other = waiting[i];
-          if(!other || other.readyState!==WebSocket.OPEN) continue;
-
-          // Länder-Abgleich: 'any' matcht alles
-          if(ws.country==='any' || other.country==='any' || ws.country===other.country){
-            waiting.splice(i,1); // entferne Partner aus Warteliste
-            pair(ws,other);
-            found=true;
-            break;
-          }
-        }
-        if(!found){
+        // Suche passenden Partner
+        let index = waiting.findIndex(s=> (s.country===ws.country || ws.country==='any' || s.country==='any') && s.readyState===WebSocket.OPEN);
+        if(index !== -1){
+          const other = waiting.splice(index,1)[0];
+          pair(ws,other);
+        } else {
           waiting.push(ws);
-          send(ws,{type:'system', text:'waiting for a stranger...'});
+          send(ws,{type:'system', text:'Waiting for a stranger...'});
         }
         break;
 
       case 'leave':
         unpair(ws);
-        send(ws,{type:'system', text:'left conversation.'});
+        send(ws,{type:'system', text:'You left the conversation.'});
         break;
 
       case 'msg':
-        const peer = partners.get(ws);
-        if(peer && peer.readyState===WebSocket.OPEN){
-          send(peer,{type:'msg', text:msg.text});
+        const peerMsg = partners.get(ws);
+        if(peerMsg && peerMsg.readyState===WebSocket.OPEN){
+          send(peerMsg,{type:'msg', text: msg.text});
         } else {
           send(ws,{type:'system', text:'No peer connected.'});
         }
+        break;
+
+      case 'typing':
+        const peerTyping = partners.get(ws);
+        if(peerTyping && peerTyping.readyState===WebSocket.OPEN){
+          send(peerTyping,{type:'typing'});
+        }
+        break;
+
+      default:
         break;
     }
   });
@@ -88,23 +91,20 @@ wss.on('connection', ws => {
   });
 });
 
-// WS Upgrade
-server.on('upgrade', (request, socket, head)=>{
-  if(request.url.startsWith('/ws')){
-    wss.handleUpgrade(request,socket,head, ws=>{
-      wss.emit('connection', ws, request);
-    });
-  } else {
-    socket.destroy();
-  }
+// WebSocket Upgrade
+server.on('upgrade', (req, socket, head)=>{
+  if(req.url.startsWith('/ws')){
+    wss.handleUpgrade(req,socket,head, ws=> wss.emit('connection', ws, req));
+  } else socket.destroy();
 });
 
 // Heartbeat
 setInterval(()=>{
   wss.clients.forEach(ws=>{
     if(ws.isAlive===false) return ws.terminate();
-    ws.isAlive=false; ws.ping();
+    ws.isAlive=false;
+    ws.ping();
   });
 }, 30000);
 
-server.listen(PORT, ()=>console.log('ChatVent server listening on',PORT));
+server.listen(PORT, ()=>console.log('ChatVent server listening on', PORT));
